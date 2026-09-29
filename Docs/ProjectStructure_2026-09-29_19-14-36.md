@@ -6,7 +6,7 @@
 │   │   └── init.sql
 │   └── docker-compose.yml
 ├── Docs
-│   └── Todo.md
+│   └── todo.md
 ├── Models
 │   ├── ChatMessage.cs
 │   ├── ChatSession.cs
@@ -26,7 +26,7 @@
 ├── AiHelper.slnx
 ├── appsettings.json
 ├── appsettings.json.example
-├── docker-compose.yml
 ├── Program.cs
-└── README.md
+├── README.md
+└── Start-app.ps1
 ```

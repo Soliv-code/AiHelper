@@ -25,21 +25,39 @@
 | Инфраструктура | Docker Compose |
 
 ## 📁 Структура проекта
+```text
+├── Data
+│   └── AiHelperDbContext.cs
+├── Docker
+│   ├── SQL
+│   │   └── init.sql
+│   └── docker-compose.yml
+├── Docs
+│   └── todo.md
+├── Models
+│   ├── ChatMessage.cs
+│   ├── ChatSession.cs
+│   └── User.cs
+├── Services
+│   ├── ChatHistoryService.cs
+│   ├── IChatHistoryService.cs
+│   ├── IOllamaService.cs
+│   ├── IUserService.cs
+│   ├── OllamaService.cs
+│   └── UserService.cs
+├── UI
+│   └── ConsoleUi.cs
+├── .gitattributes
+├── .gitignore
+├── AiHelper.csproj
+├── AiHelper.slnx
+├── appsettings.json
+├── appsettings.json.example
+├── Program.cs
+├── README.md
+└── Start-app.ps1
 ```
-AiHelper/
-├── Docker/
-│ ├── docker-compose.yml # PostgreSQL + pgVector
-│ └── SQL/
-│ └── init.sql # Схема БД, индексы, триггеры
-├── Models/ # Сущности EF Core (сгенерированы из БД)
-├── Services/ # Бизнес-логика (Ollama, история, пользователи)
-├── UI/ # Консольный интерфейс (Spectre.Console)
-├── Data/ # AiHelperDbContext
-├── Docs/ # Документация и TODO
-├── Program.cs # Точка входа
-├── appsettings.json # Конфигурация (локально, не в git)
-└── appsettings.json.example # Шаблон конфигурации
-```
+
 
 ## ⚡ Быстрый старт
 
