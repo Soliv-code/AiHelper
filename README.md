@@ -52,8 +52,8 @@ AiHelper/
 ├── .gitignore
 ├── AiHelper.csproj
 ├── AiHelper.slnx
-├── appsettings.json
-├── appsettings.json.example
+├── appsettings.json                # Создайте сами, чтобы подключить БД
+├── appsettings.json.example        # Пример для подключения БД
 ├── Program.cs
 ├── README.md
 └── Start-app.ps1
