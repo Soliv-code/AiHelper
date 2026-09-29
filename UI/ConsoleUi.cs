@@ -72,4 +72,33 @@ public static class ConsoleUi
     }
 
     public static void ShowInfo(string msg) => AnsiConsole.MarkupLine($"[blue]{msg}[/]");
+    // 
+    public static ChatSession? SelectChatAction(List<ChatSession> sessions)
+    {
+        var choicesMap = new Dictionary<string, ChatSession?>
+        {
+            ["✨ Создать новый чат"] = null
+        };
+
+        foreach (var session in sessions)
+        {
+            // Безопасно берем заголовок
+            var title = string.IsNullOrWhiteSpace(session.Title) ? "Без названия" : session.Title;
+
+            // Безопасно форматируем дату: если UpdatedAt не null, форматируем, иначе пишем "Неизвестно"
+            var dateStr = session.UpdatedAt?.ToString("dd.MM HH:mm") ?? "Неизвестно";
+
+            var displayText = $"💬 {title} (Обновлен: {dateStr})";
+            choicesMap[displayText] = session;
+        }
+
+        var selectedText = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[green bold]📂 Что будем делать?[/]")
+                .PageSize(10)
+                .AddChoices(choicesMap.Keys)
+        );
+
+        return choicesMap[selectedText];
+    }
 }

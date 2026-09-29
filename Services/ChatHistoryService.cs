@@ -4,14 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AiHelper.Services;
 
-public class ChatHistoryService : IChatHistoryService
+public class ChatHistoryService(AiHelperDbContext dbContext) : IChatHistoryService
 {
-    private readonly AiHelperDbContext _dbContext;
-
-    public ChatHistoryService(AiHelperDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
+    private readonly AiHelperDbContext _dbContext = dbContext;
 
     public async Task<ChatSession> CreateNewSessionAsync(Guid userId, string modelName)
     {
@@ -55,9 +50,14 @@ public class ChatHistoryService : IChatHistoryService
     }
 
     public async Task<ChatSession?> GetSessionWithMessagesAsync(Guid sessionId)
-    {
-        return await _dbContext.ChatSessions
+        => await _dbContext.ChatSessions
             .Include(s => s.ChatMessages.OrderBy(m => m.CreatedAt)) // <-- ИСПРАВЛЕНО: было m.Timestamp
             .FirstOrDefaultAsync(s => s.Id == sessionId);
-    }
+
+    public async Task<List<ChatSession>> GetUserSessionsAsync(Guid userId)
+        => await _dbContext.ChatSessions
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.UpdatedAt)
+            .ToListAsync();
+
 }
