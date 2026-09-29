@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq; // Добавлено для работы с коллекциями (First)
+using System.Linq; // Добавлено для работы с коллекциями (First, Select)
 using System.Threading.Tasks;
 using AiHelper.Data;
-using AiHelper.Models; // Добавлено для класса User
+using AiHelper.Models; // Добавлено для класса User и ChatSession
 using AiHelper.Services;
 using AiHelper.UI;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ public class Program
     {
         // Устанавливаем кодировку UTF8 для отображения emoji в консоли
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        ConsoleUi.ShowWelcome(); 
+        ConsoleUi.ShowWelcome();
 
         try
         {
@@ -32,7 +32,7 @@ public class Program
 
             // 2. Настраиваем DbContext
             var optionsBuilder = new DbContextOptionsBuilder<AiHelperDbContext>();
-            optionsBuilder.UseNpgsql(connectionString); 
+            optionsBuilder.UseNpgsql(connectionString);
 
             using var dbContext = new AiHelperDbContext(optionsBuilder.Options);
 
@@ -70,12 +70,37 @@ public class Program
             var selectedModel = ConsoleUi.SelectModel(models);
             ConsoleUi.ShowModelSelected(selectedModel);
 
-            // 5. Создаем сессию, передавая ID текущего пользователя!
-            var currentSession = await historyService.CreateNewSessionAsync(currentUser.Id, selectedModel);
-            ConsoleUi.ShowInfo($"💾 Чат создан. ID: {currentSession.Id}");
+            // 5. Получаем список чатов пользователя и даем выбор (Новая логика!)
+            var userSessions = await historyService.GetUserSessionsAsync(currentUser.Id);
+            var selectedSession = ConsoleUi.SelectChatAction(userSessions);
 
+            ChatSession currentSession;
             var memoryHistory = new List<(string role, string content)>();
 
+            if (selectedSession == null)
+            {
+                // Выбираем "Создать новый чат"
+                currentSession = await historyService.CreateNewSessionAsync(currentUser.Id, selectedModel);
+                ConsoleUi.ShowInfo($"💾 Новый чат создан. ID: {currentSession.Id}");
+            }
+            else
+            {
+                // Выбираем существующий чат
+                currentSession = await historyService.GetSessionWithMessagesAsync(selectedSession.Id);
+
+                // Загружаем историю из БД в память для контекста Ollama
+                // ВАЖНО: Если VS подчеркивает ChatMessages красным, замени на Messages
+                if (currentSession?.ChatMessages != null)
+                {
+                    memoryHistory = currentSession.ChatMessages
+                        .Select(m => (m.Role, m.Content))
+                        .ToList();
+                }
+
+                ConsoleUi.ShowInfo($"💬 Загружен чат: [cyan]{currentSession.Title}[/] ({memoryHistory.Count} сообщений в истории)");
+            }
+
+            // 6. Основной цикл чата
             while (true)
             {
                 var userMessage = ConsoleUi.GetUserInput();
@@ -86,7 +111,7 @@ public class Program
 
                     await Task.Delay(5000); // 5 секунд
                     break;
-                } 
+                }
 
                 await historyService.SaveMessageAsync(currentSession.Id, "user", userMessage);
                 memoryHistory.Add(("user", userMessage));
