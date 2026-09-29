@@ -73,7 +73,7 @@ public static class ConsoleUi
     }
 
     public static void ShowInfo(string msg) => AnsiConsole.MarkupLine($"[blue]{msg}[/]");
-    // 
+    
     public static ChatSession? SelectChatAction(List<ChatSession> sessions)
     {
         var choicesMap = new Dictionary<string, ChatSession?>
@@ -101,5 +101,21 @@ public static class ConsoleUi
         );
 
         return choicesMap[selectedText];
+    }
+
+    public static void ShowContext(List<ChatMessage> messages)
+    {
+        // Заголовок
+        AnsiConsole.MarkupLine($"[dim] Найдено [bold]{messages.Count}[/] похожих вопросов в твоей истории:[/]");
+
+        // Список найденных вопросов
+        foreach (var msg in messages)
+        {
+            // Обязательно используем Markup.Escape, чтобы скобки в тексте не ломали рендер
+            AnsiConsole.MarkupLine($"[dim]  • {Markup.Escape(msg.Content)}[/]");
+        }
+
+        // Пустая строка для отступа
+        AnsiConsole.WriteLine();
     }
 }

@@ -150,15 +150,17 @@ public class Program
 
                     if (similarMessages.Any())
                     {
-                        // Формируем строку контекста
-                        var contextPrompt = "📚 Контекст из твоих прошлых чатов, который может быть полезен:\n";
+                        // 1. Показываем контекст пользователю в консоли
+                        ConsoleUi.ShowContext(similarMessages);
+
+                        // 2. Формируем скрытый промпт для AI
+                        var contextPrompt = "Контекст из прошлых чатов пользователя:\n";
                         foreach (var msg in similarMessages)
                         {
-                            contextPrompt += $"- Ты ранее спрашивал: \"{msg.Content}\"\n";
+                            contextPrompt += $"- {msg.Content}\n";
                         }
 
-                        // Добавляем этот контекст в историю ПЕРЕД текущим сообщением пользователя
-                        // (с ролью "system" или как отдельное сообщение, чтобы AI понял, что это справка)
+                        // 3. Добавляем в историю как системное сообщение
                         memoryHistory.Add(("system", contextPrompt));
                     }
                 }
