@@ -26,6 +26,7 @@
 
 ## 📁 Структура проекта
 ```text
+AiHelper/
 ├── Data
 │   └── AiHelperDbContext.cs
 ├── Docker
