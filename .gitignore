@@ -1,0 +1,61 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+*.snupkg
+**/[Pp]roject.nuget.cache/
+**/[Pp]roject.assets.json
+
+# Rider / ReSharper
+.idea/
+*.sln.iml
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userprefs
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+
+# Конфигурация с секретами (пароли БД)
+appsettings.json
+appsettings.Development.json
+
+# Docker volumes (локальные данные PostgreSQL)
+postgres_data/
+
+# Временные файлы
+*.tmp
+*.bak
+*.swp
+*~
