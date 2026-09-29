@@ -27,14 +27,16 @@ public class Program
 
             // 2. Настраиваем DbContext
             var optionsBuilder = new DbContextOptionsBuilder<AiHelperDbContext>();
-            optionsBuilder.UseNpgsql(connectionString);
+            // ДОБАВЛЕНО: o => o.UseVector() включает поддержку типа vector в EF Core
+            optionsBuilder.UseNpgsql(connectionString, o => o.UseVector());
 
             using var dbContext = new AiHelperDbContext(optionsBuilder.Options);
 
             // Инициализируем сервисы
             var userService = new UserService(dbContext);
             var ollamaService = new OllamaService();
-            var historyService = new ChatHistoryService(dbContext);
+            //var historyService = new ChatHistoryService(dbContext);
+            var historyService = new ChatHistoryService(dbContext, ollamaService);
 
             // 3. Логика выбора или создания пользователя
             var users = await userService.GetAllUsersAsync();
@@ -138,7 +140,28 @@ public class Program
                 }
 
                 await historyService.SaveMessageAsync(currentSession.Id, "user", userMessage);
-                memoryHistory.Add(("user", userMessage));
+                // 2. Получаем вектор текущего сообщения для поиска
+                var currentMessageVector = await ollamaService.GetEmbeddingAsync(userMessage);
+
+                // 3. Если вектор получен, ищем похожие прошлые вопросы
+                if (currentMessageVector != null)
+                {
+                    var similarMessages = await historyService.SearchRelevantContextAsync(currentUser.Id, currentMessageVector, limit: 3);
+
+                    if (similarMessages.Any())
+                    {
+                        // Формируем строку контекста
+                        var contextPrompt = "📚 Контекст из твоих прошлых чатов, который может быть полезен:\n";
+                        foreach (var msg in similarMessages)
+                        {
+                            contextPrompt += $"- Ты ранее спрашивал: \"{msg.Content}\"\n";
+                        }
+
+                        // Добавляем этот контекст в историю ПЕРЕД текущим сообщением пользователя
+                        // (с ролью "system" или как отдельное сообщение, чтобы AI понял, что это справка)
+                        memoryHistory.Add(("system", contextPrompt));
+                    }
+                }
 
                 ConsoleUi.StartAssistantResponse();
 

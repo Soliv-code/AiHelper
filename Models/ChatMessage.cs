@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Pgvector;
 
 namespace AiHelper.Models;
 
@@ -12,6 +11,9 @@ public partial class ChatMessage
     public string Role { get; set; } = null!;
 
     public string Content { get; set; } = null!;
+
+    // ДОБАВЛЕНО ВРУЧНУЮ: Массив float для хранения вектора эмбеддинга
+    public Vector? Embedding { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
