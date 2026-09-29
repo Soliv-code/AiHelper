@@ -32,7 +32,7 @@ public class Program
 
             // 2. Настраиваем DbContext
             var optionsBuilder = new DbContextOptionsBuilder<AiHelperDbContext>();
-            optionsBuilder.UseNpgsql(connectionString);
+            optionsBuilder.UseNpgsql(connectionString); 
 
             using var dbContext = new AiHelperDbContext(optionsBuilder.Options);
 
