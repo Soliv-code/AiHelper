@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq; // Добавлено для работы с коллекциями (First, Select)
-using System.Threading.Tasks;
-using AiHelper.Data;
+﻿using AiHelper.Data;
 using AiHelper.Models; // Добавлено для класса User и ChatSession
 using AiHelper.Services;
 using AiHelper.UI;
@@ -45,16 +40,26 @@ public class Program
             var users = await userService.GetAllUsersAsync();
             var userChoice = ConsoleUi.SelectOrCreateUser(users);
 
-            User currentUser; 
+            User? currentUser = null;
             if (userChoice == "🆕 Создать нового пользователя")
             {
                 var newUsername = ConsoleUi.AskForNewUsername();
                 currentUser = await userService.CreateUserAsync(newUsername);
-                ConsoleUi.ShowInfo($"✅ Пользователь [cyan]{currentUser.Username}[/] создан!");
+
+                // Используем !, так как мы только что создали/получили пользователя и знаем, что он не null
+                ConsoleUi.ShowInfo($"✅ Пользователь [cyan]{currentUser!.Username}[/] создан!");
             }
             else
             {
-                currentUser = users.First(u => $"👤 {u.Username}" == userChoice);
+                // FirstOrDefault безопаснее, чем First
+                currentUser = users.FirstOrDefault(u => $"👤 {u.Username}" == userChoice);
+
+                if (currentUser == null)
+                {
+                    ConsoleUi.ShowError("Пользователь не найден. Попробуйте запустить приложение заново.");
+                    return;
+                }
+
                 ConsoleUi.ShowInfo($"✅ Приветствуем, [cyan]{currentUser.Username}[/]!");
             }
 
@@ -86,18 +91,37 @@ public class Program
             else
             {
                 // Выбираем существующий чат
-                currentSession = await historyService.GetSessionWithMessagesAsync(selectedSession.Id);
+                var loadedSession = await historyService.GetSessionWithMessagesAsync(selectedSession.Id);
 
-                // Загружаем историю из БД в память для контекста Ollama
-                // ВАЖНО: Если VS подчеркивает ChatMessages красным, замени на Messages
-                if (currentSession?.ChatMessages != null)
+                // Явная проверка на null удовлетворяет компилятор
+                if (loadedSession == null)
                 {
-                    memoryHistory = currentSession.ChatMessages
-                        .Select(m => (m.Role, m.Content))
-                        .ToList();
+                    ConsoleUi.ShowError("Не удалось загрузить выбранный чат. Возможно, он был удален.");
+                    return;
                 }
 
-                ConsoleUi.ShowInfo($"💬 Загружен чат: [cyan]{currentSession.Title}[/] ({memoryHistory.Count} сообщений в истории)");
+                // Теперь компилятор на 100% уверен, что currentSession не null!
+                currentSession = loadedSession;
+
+                // Загружаем историю из БД в память для контекста Ollama
+                // (Если VS подчеркивает ChatMessages красным, просто замени на Messages)
+                if (currentSession.ChatMessages != null)
+                {
+                    /*
+                    memoryHistory = currentSession.ChatMessages
+                        .OrderBy(m => m.CreatedAt) // На всякий случай явно сортируем по времени
+                        .Select(m => (m.Role, m.Content))
+                        .ToList();
+                    */
+                    // По новым стандартам упрощаем ".ToList();":
+                    memoryHistory = [.. currentSession.ChatMessages
+                        .OrderBy(m => m.CreatedAt) // На всякий случай явно сортируем по времени
+                        .Select(m => (m.Role, m.Content))];
+                }
+
+                // Безопасно получаем заголовок
+                var title = string.IsNullOrWhiteSpace(currentSession.Title) ? "Без названия" : currentSession.Title;
+                ConsoleUi.ShowInfo($"💬 Загружен чат: [cyan]{title}[/] ({memoryHistory.Count} сообщений в истории)");
             }
 
             // 6. Основной цикл чата
@@ -135,6 +159,7 @@ public class Program
         catch (Exception ex)
         {
             ConsoleUi.ShowError(ex.Message);
+            Console.ReadLine();
         }
     }
 }
