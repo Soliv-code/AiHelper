@@ -6,7 +6,7 @@
 │   │   └── init.sql
 │   └── docker-compose.yml
 ├── Docs
-│   └── _Todo.md
+│   └── Todo.md
 ├── Models
 │   ├── ChatMessage.cs
 │   ├── ChatSession.cs
