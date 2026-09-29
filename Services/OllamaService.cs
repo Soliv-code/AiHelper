@@ -1,4 +1,7 @@
 ﻿using OllamaSharp;
+using OllamaSharp.Models;
+using Pgvector;
+using System.Runtime.InteropServices;
 
 namespace AiHelper.Services;
 
@@ -17,11 +20,7 @@ public class OllamaService : IOllamaService
         return [.. models.Select(m => m.Name).OrderBy(n => n)];
     }
 
-    public async IAsyncEnumerable<string> StreamChatResponseAsync(
-        string modelName, 
-        string userMessage, 
-        List<(string role, string content)> history
-        )
+    public async IAsyncEnumerable<string> StreamChatResponseAsync(string modelName, string userMessage, List<(string role, string content)> history)
     {
         // Установили модель для общения:
         _ollamaClient.SelectedModel = modelName;
@@ -45,5 +44,31 @@ public class OllamaService : IOllamaService
             yield return token;
         }
 
+    }
+    public async Task<Vector?> GetEmbeddingAsync(string text)
+    {
+        try
+        {
+            // Создаем запрос на генерацию эмбеддинга
+            var request = new EmbedRequest
+            {
+                Model = "nomic-embed-text",
+                // Оборачиваем текст в массив, так как Ollama API принимает коллекцию строк
+                Input = [text]
+            };
+
+            // Вызываем метод EmbedAsync (убедись, что переменная клиента называется так же, как у тебя в классе: _ollamaApiClient или _ollamaClient)
+            var response = await _ollamaClient.EmbedAsync(request);
+            var floats = response.Embeddings?.FirstOrDefault();
+
+            // Ollama возвращает список векторов (по одному на каждый входной текст). 
+            // Берем первый (и единственный) вектор.
+            return floats != null ? new Vector(floats) : null;
+        }
+        catch (Exception)
+        {
+            // Если модель не скачана или произошла ошибка сети, возвращаем null
+            return null;
+        }
     }
 }

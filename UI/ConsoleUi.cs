@@ -67,7 +67,8 @@ public static class ConsoleUi
     // Ошибочки: 
     public static void ShowError(string message)
     {
-        AnsiConsole.MarkupLine($"\n[red bold]❌ Ошибка:[/] {message}");
+        // Markup.Escape защищает текст от парсинга, если в message есть символы '[' или ']'
+        AnsiConsole.MarkupLine($"\n[red bold]❌ Ошибка:[/] {Markup.Escape(message)}");
         AnsiConsole.MarkupLine("[yellow]💡 Убедитесь, что Ollama запущена и доступна по http://localhost:11434[/]");
     }
 

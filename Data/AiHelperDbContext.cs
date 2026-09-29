@@ -48,6 +48,11 @@ public partial class AiHelperDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("role");
 
+            // ДОБАВЛЕНО ВРУЧНУЮ: Явный маппинг типа vector(768)
+            entity.Property(e => e.Embedding)
+                .HasColumnType("vector")
+                .HasColumnName("embedding");
+
             entity.HasOne(d => d.ChatSession).WithMany(p => p.ChatMessages)
                 .HasForeignKey(d => d.ChatSessionId)
                 .HasConstraintName("chat_messages_chat_session_id_fkey");

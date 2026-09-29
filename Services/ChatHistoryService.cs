@@ -1,12 +1,15 @@
 ﻿using AiHelper.Data;
 using AiHelper.Models;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 
 namespace AiHelper.Services;
 
-public class ChatHistoryService(AiHelperDbContext dbContext) : IChatHistoryService
+public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService ollamaService) : IChatHistoryService
 {
     private readonly AiHelperDbContext _dbContext = dbContext;
+    private readonly IOllamaService _ollamaService = ollamaService;
 
     public async Task<ChatSession> CreateNewSessionAsync(Guid userId, string modelName)
     {
@@ -23,11 +26,21 @@ public class ChatHistoryService(AiHelperDbContext dbContext) : IChatHistoryServi
 
     public async Task SaveMessageAsync(Guid sessionId, string role, string content)
     {
+        // 1. Генерируем эмбеддинг для текста сообщения
+        // ИЗМЕНЕНО: используем Vector? вместо float[]?
+        Vector? embedding = null;
+
+        if (role == "user") // Векторизуем пока только вопросы пользователя для экономии ресурсов
+        {
+            embedding = await _ollamaService.GetEmbeddingAsync(content);
+        }
+
         var message = new ChatMessage
         {
             ChatSessionId = sessionId,
             Role = role,
             Content = content,
+            Embedding = embedding, // <--- СОХРАНЯЕМ ВЕКТОР В БД
             CreatedAt = DateTime.UtcNow // <-- ИСПРАВЛЕНО: было Timestamp
         };
 
@@ -47,6 +60,19 @@ public class ChatHistoryService(AiHelperDbContext dbContext) : IChatHistoryServi
         }
 
         await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<List<ChatMessage>> SearchRelevantContextAsync(Guid userId, Vector queryVector, int limit = 3)
+    {
+        // Ищем только пользовательские сообщения, у которых есть вектор, принадлежащие этому пользователю
+        // Сортируем по косинусному расстоянию (чем меньше число, тем точнее совпадение по смыслу)
+        return await _dbContext.ChatMessages
+            .Where(m => m.Role == "user"
+                     && m.ChatSession.UserId == userId
+                     && m.Embedding != null)
+            .OrderBy(m => m.Embedding.CosineDistance(queryVector))
+            .Take(limit)
+            .ToListAsync();
     }
 
     public async Task<ChatSession?> GetSessionWithMessagesAsync(Guid sessionId)
