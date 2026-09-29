@@ -45,7 +45,7 @@ public class Program
             var users = await userService.GetAllUsersAsync();
             var userChoice = ConsoleUi.SelectOrCreateUser(users);
 
-            User currentUser;
+            User currentUser; 
             if (userChoice == "🆕 Создать нового пользователя")
             {
                 var newUsername = ConsoleUi.AskForNewUsername();

@@ -10,7 +10,7 @@ public class UserService(AiHelperDbContext dbContext) : IUserService
     private readonly AiHelperDbContext _dbContext = dbContext;
     public async Task<List<User>> GetAllUsersAsync()
         => await _dbContext.Users.OrderBy(u => u.Username).ToListAsync();
-    public async Task<User?> CreateUserAsync(string username)
+    public async Task<User> CreateUserAsync(string username)
     {
         var cleanUsername = username.Trim();
 

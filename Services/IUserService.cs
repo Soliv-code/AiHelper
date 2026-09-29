@@ -14,5 +14,5 @@ public interface IUserService
     /// </summary>
     /// <param name="username"></param>
     /// <returns></returns>
-    Task<User?> CreateUserAsync(string username);
+    Task<User> CreateUserAsync(string username);
 }
