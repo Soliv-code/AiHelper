@@ -7,4 +7,5 @@ public interface IChatHistoryService
     Task<ChatSession> CreateNewSessionAsync(Guid userId, string modelName);
     Task SaveMessageAsync(Guid sessionId, string role, string content);
     Task<ChatSession?> GetSessionWithMessagesAsync(Guid sessionId);
+    Task<List<ChatSession>> GetUserSessionsAsync(Guid userId);
 }
