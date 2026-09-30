@@ -134,39 +134,44 @@ public class Program
                 if (string.IsNullOrWhiteSpace(userMessage) || userMessage.Trim().ToLower() is "/exit" or "/quit" or "/e" or "/q")
                 {
                     ConsoleUi.ShowGoodbye();
-
-                    await Task.Delay(5000); // 5 секунд
+                    await Task.Delay(2000); // 2 секунды достаточно, чтобы прочитать прощание
                     break;
                 }
 
-                await historyService.SaveMessageAsync(currentSession.Id, "user", userMessage);
-                // 2. Получаем вектор текущего сообщения для поиска
+                // 1. СНАЧАЛА получаем вектор текущего сообщения
                 var currentMessageVector = await ollamaService.GetEmbeddingAsync(userMessage);
 
-                // 3. Если вектор получен, ищем похожие прошлые вопросы
+                // 2. Ищем похожие вопросы ДО сохранения текущего сообщения в БД 
+                // (чтобы текущий вопрос не нашел сам себя с расстоянием 0)
                 if (currentMessageVector != null)
                 {
                     var similarMessages = await historyService.SearchRelevantContextAsync(currentUser.Id, currentMessageVector, limit: 3);
 
                     if (similarMessages.Any())
                     {
-                        // 1. Показываем контекст пользователю в консоли
+                        // Показываем контекст пользователю в консоли
                         ConsoleUi.ShowContext(similarMessages);
 
-                        // 2. Формируем скрытый промпт для AI
+                        // Формируем скрытый промпт для AI
                         var contextPrompt = "Контекст из прошлых чатов пользователя:\n";
                         foreach (var msg in similarMessages)
                         {
                             contextPrompt += $"- {msg.Content}\n";
                         }
 
-                        // 3. Добавляем в историю как системное сообщение
+                        // Добавляем в историю как системное сообщение
                         memoryHistory.Add(("system", contextPrompt));
                     }
                 }
 
-                ConsoleUi.StartAssistantResponse();
+                // 3. ТЕПЕРЬ сохраняем сообщение пользователя в БД (СТРОГО ОДИН РАЗ!)
+                await historyService.SaveMessageAsync(currentSession.Id, "user", userMessage);
 
+                // И обязательно добавляем его в локальную историю для контекста текущего диалога
+                memoryHistory.Add(("user", userMessage));
+
+                // 4. Получаем ответ от AI
+                ConsoleUi.StartAssistantResponse();
                 var assistantResponse = string.Empty;
 
                 await foreach (var token in ollamaService.StreamChatResponseAsync(selectedModel, userMessage, memoryHistory))
@@ -174,8 +179,12 @@ public class Program
                     Console.Write(token);
                     assistantResponse += token;
                 }
+                Console.WriteLine(); // Перенос строки после завершения стриминга
 
+                // 5. Сохраняем ответ ассистента в БД (СТРОГО ОДИН РАЗ!)
                 await historyService.SaveMessageAsync(currentSession.Id, "assistant", assistantResponse);
+
+                // И добавляем его в локальную историю
                 memoryHistory.Add(("assistant", assistantResponse));
 
                 ConsoleUi.EndAssistantResponse();

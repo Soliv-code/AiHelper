@@ -25,8 +25,10 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     chat_session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
     content TEXT NOT NULL,
-    embedding vector(768), -- <--- ДОБАВЛЕНО: колонка для векторного представления текста
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    embedding vector(768), -- Колонка для векторного представления текста
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    -- CHECK constraint вынесен отдельно для чистоты синтаксиса
+    CONSTRAINT check_embedding_only_for_users CHECK (role = 'user' OR embedding IS NULL)
 );
 
 -- Индексы для производительности
