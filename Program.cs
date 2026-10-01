@@ -1,11 +1,10 @@
 ﻿using AiHelper.Data;
-using AiHelper.Models; // Добавлено для класса User и ChatSession
+using AiHelper.Models;
 using AiHelper.Services;
 using AiHelper.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Pgvector.EntityFrameworkCore;
-using Spectre.Console; // Добавлено для расширения .UseVector()
+using Spectre.Console;
 
 namespace AiHelper;
 
