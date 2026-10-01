@@ -8,6 +8,7 @@ namespace AiHelper.Services;
 public class OllamaService : IOllamaService
 {
     private readonly OllamaApiClient _ollamaClient;
+   
     public OllamaService(string apiUri = "http://127.0.0.1:11434")
     {
         _ollamaClient = new OllamaApiClient(apiUri);
@@ -45,6 +46,7 @@ public class OllamaService : IOllamaService
         }
 
     }
+   
     public async Task<Vector?> GetEmbeddingAsync(string text)
     {
         try
