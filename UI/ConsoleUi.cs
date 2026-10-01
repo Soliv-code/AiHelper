@@ -54,9 +54,11 @@ public static class ConsoleUi
     {
         var choicesMap = new Dictionary<string, ChatSession?>
         {
+            ["⬅️ Назад в главное меню"] = null, // <-- ДОБАВЛЕНО: Кнопка назад
             ["✨ Создать новый чат"] = null,
-            ["✏️ Переименовать чат"] = null,  // Специальный маркер
-            ["🗑️ Удалить чат"] = null        // Специальный маркер
+            ["✏️ Переименовать чат"] = null,
+            ["🗑️ Удалить чат"] = null,
+            ["─────────────────────"] = null // <-- ДОБАВЛЕНО: Визуальный разделитель
         };
 
         foreach (var session in sessions)
@@ -75,6 +77,8 @@ public static class ConsoleUi
         );
 
         // Возвращаем действие и саму сессию (если она выбрана)
+        if (selectedText == "⬅️ Назад в главное меню") return ("Back", null);
+        if (selectedText == "─────────────────────") return ("Separator", null); // Разделитель не должен выбираться, но на всякий случай
         if (selectedText == "✏️ Переименовать чат") return ("Rename", null);
         if (selectedText == "🗑️ Удалить чат") return ("Delete", null);
         if (selectedText == "✨ Создать новый чат") return ("CreateNew", null);
