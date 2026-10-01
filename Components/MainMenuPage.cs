@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AiHelper.Models;
 using AiHelper.Services;
@@ -22,12 +23,26 @@ public class MainMenuPage : IComponent
 
     public async Task RunAsync()
     {
+        var userService = _appContext.GetService<UserService>();
+
+        // 🔄 1. ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ ПРИ ЗАПУСКЕ
+        var lastUsername = await userService.GetLastUsernameAsync();
+        if (!string.IsNullOrEmpty(lastUsername))
+        {
+            var users = await userService.GetAllUsersAsync();
+            _currentUser = users.FirstOrDefault(u => u.Username == lastUsername);
+
+            if (_currentUser != null)
+            {
+                _selectedModel = await userService.GetLastModelAsync(_currentUser.Id);
+            }
+        }
+
+        // 🔄 2. ГЛАВНЫЙ ЦИКЛ МЕНЮ
         while (true)
         {
             Console.Clear();
             ConsoleUi.ShowWelcome();
-
-            // Показываем текущее состояние
             ShowStatus();
 
             var choice = AnsiConsole.Prompt(
@@ -47,7 +62,7 @@ public class MainMenuPage : IComponent
                 case "🚪 Выход из приложения":
                     ConsoleUi.ShowGoodbye();
                     await Task.Delay(1000);
-                    return; // Выход из метода, приложение завершается
+                    return; // Выход из приложения
 
                 case "💬 Начать чат":
                     if (_currentUser == null || _selectedModel == null)
@@ -57,18 +72,17 @@ public class MainMenuPage : IComponent
                     }
                     else
                     {
-                        // Активируем компонент чата, передавая ему пользователя и модель
                         var chatPage = new ChatPage(_appContext, _currentUser, _selectedModel);
                         await chatPage.RunAsync();
                     }
                     break;
 
                 case "👤 Сменить пользователя":
-                    await SelectUserAsync();
+                    await SelectUserAsync(userService);
                     break;
 
                 case "🤖 Сменить модель":
-                    await SelectModelAsync();
+                    await SelectModelAsync(userService);
                     break;
             }
         }
@@ -89,9 +103,8 @@ public class MainMenuPage : IComponent
         AnsiConsole.WriteLine();
     }
 
-    private async Task SelectUserAsync()
+    private async Task SelectUserAsync(UserService userService)
     {
-        var userService = _appContext.GetService<UserService>();
         var users = await userService.GetAllUsersAsync();
         var userChoice = ConsoleUi.SelectOrCreateUser(users);
 
@@ -114,10 +127,24 @@ public class MainMenuPage : IComponent
                 ConsoleUi.ShowInfo($"✅ Приветствуем, [cyan]{_currentUser.Username}[/]!");
             }
         }
+
+        // 💾 СОХРАНЯЕМ СОСТОЯНИЕ В БД
+        if (_currentUser != null)
+        {
+            await userService.SetLastUsernameAsync(_currentUser.Username);
+            // Сбрасываем модель, так как у нового пользователя может быть другая предпочтительная модель
+            _selectedModel = await userService.GetLastModelAsync(_currentUser.Id);
+        }
     }
 
-    private async Task SelectModelAsync()
+    private async Task SelectModelAsync(UserService userService)
     {
+        if (_currentUser == null)
+        {
+            ConsoleUi.ShowError("Сначала выберите пользователя!");
+            return;
+        }
+
         var ollamaService = _appContext.GetService<OllamaService>();
         var models = await ollamaService.GetAvailableModelsAsync();
 
@@ -136,5 +163,8 @@ public class MainMenuPage : IComponent
 
         _selectedModel = modelChoice;
         ConsoleUi.ShowModelSelected(_selectedModel);
+
+        // 💾 СОХРАНЯЕМ СОСТОЯНИЕ В БД
+        await userService.SaveLastModelAsync(_currentUser.Id, _selectedModel);
     }
 }
