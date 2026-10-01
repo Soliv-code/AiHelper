@@ -83,7 +83,7 @@ public class Program
             ConsoleUi.ShowModelSelected(selectedModel);
 
             // 5. Получаем список чатов пользователя и даем выбор (Новая логика!)
-            var userSessions = await historyService.GetUserSessionsAsync(currentUser.Id);
+            var userSessions = await historyService.GetUserSessionsAsync(currentUser.Id, selectedModel);
             var selectedSession = ConsoleUi.SelectChatAction(userSessions);
 
             ChatSession currentSession;
@@ -150,7 +150,11 @@ public class Program
                 // (чтобы текущий вопрос не нашел сам себя с расстоянием 0)
                 if (currentMessageVector != null)
                 {
-                    var similarMessages = await historyService.SearchRelevantContextAsync(currentUser.Id, currentMessageVector, limit: 3);
+                    var similarMessages = await historyService.SearchRelevantContextAsync(
+                        currentUser.Id, 
+                        selectedModel,
+                        currentMessageVector, 
+                        limit: 3);
 
                     if (similarMessages.Any())
                     {
@@ -158,7 +162,7 @@ public class Program
                         ConsoleUi.ShowContext(similarMessages);
 
                         // Формируем скрытый промпт для AI
-                        var contextPrompt = "Контекст из прошлых чатов пользователя:\n";
+                        var contextPrompt = "Контекст из прошлых чатов пользователя (модель " + selectedModel + "):\n";
                         foreach (var msg in similarMessages)
                         {
                             contextPrompt += $"- {msg.Content}\n";

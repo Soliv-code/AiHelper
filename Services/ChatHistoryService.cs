@@ -1,6 +1,7 @@
 ﻿using AiHelper.Data;
 using AiHelper.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
 
@@ -62,13 +63,16 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<List<ChatMessage>> SearchRelevantContextAsync(Guid userId, Vector queryVector, int limit = 3)
+    public async Task<List<ChatMessage>> SearchRelevantContextAsync(Guid userId, string modelName, Vector queryVector, int limit = 3)
     {
         // Ищем только пользовательские сообщения, у которых есть вектор, принадлежащие этому пользователю
+        // И ВАЖНО: только из чатов, созданных для текущей модели!
         // Сортируем по косинусному расстоянию (чем меньше число, тем точнее совпадение по смыслу)
+
         return await _dbContext.ChatMessages
             .Where(m => m.Role == "user"
                      && m.ChatSession.UserId == userId
+                     && m.ChatSession.ModelName == modelName // <-- ВОТ ЭТО ГЛАВНОЕ ИЗМЕНЕНИЕ
                      && m.Embedding != null)
             .OrderBy(m => m.Embedding.CosineDistance(queryVector))
             .Take(limit)
@@ -80,9 +84,10 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
             .Include(s => s.ChatMessages.OrderBy(m => m.CreatedAt)) // <-- ИСПРАВЛЕНО: было m.Timestamp
             .FirstOrDefaultAsync(s => s.Id == sessionId);
 
-    public async Task<List<ChatSession>> GetUserSessionsAsync(Guid userId)
+    public async Task<List<ChatSession>> GetUserSessionsAsync(Guid userId, string modelName)
         => await _dbContext.ChatSessions
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId 
+                     && s.ModelName == modelName)
             .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync();
 
