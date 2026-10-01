@@ -32,6 +32,9 @@ public class ChatPage : IComponent
 
         switch (chatAction)
         {
+            case "Back":
+                return; // Возврат в главное меню
+
             case "Delete":
                 await HandleDeleteChatAsync(historyService, userSessions);
                 return; // Возврат в главное меню
@@ -57,8 +60,8 @@ public class ChatPage : IComponent
                 if (currentSession.ChatMessages != null)
                 {
                     memoryHistory = [.. currentSession.ChatMessages
-                        .OrderBy(m => m.CreatedAt)
-                        .Select(m => (m.Role, m.Content))];
+                .OrderBy(m => m.CreatedAt)
+                .Select(m => (m.Role, m.Content))];
                 }
 
                 var title = string.IsNullOrWhiteSpace(currentSession.Title) ? "Без названия" : currentSession.Title;
