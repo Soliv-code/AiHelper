@@ -16,15 +16,33 @@ public partial class AiHelperDbContext : DbContext
     {
     }
 
+    public virtual DbSet<AppState> AppStates { get; set; }
+
     public virtual DbSet<ChatMessage> ChatMessages { get; set; }
 
     public virtual DbSet<ChatSession> ChatSessions { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<UserPreference> UserPreferences { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("vector");
+
+        modelBuilder.Entity<AppState>(entity =>
+        {
+            entity.HasKey(e => e.Key).HasName("app_state_pkey");
+
+            entity.ToTable("app_state");
+
+            entity.Property(e => e.Key)
+                .HasMaxLength(50)
+                .HasColumnName("key");
+            entity.Property(e => e.Value)
+                .HasMaxLength(255)
+                .HasColumnName("value");
+        });
 
         modelBuilder.Entity<ChatMessage>(entity =>
         {
@@ -111,6 +129,26 @@ public partial class AiHelperDbContext : DbContext
             entity.Property(e => e.Username)
                 .HasMaxLength(50)
                 .HasColumnName("username");
+        });
+
+        modelBuilder.Entity<UserPreference>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("user_preferences_pkey");
+
+            entity.ToTable("user_preferences");
+
+            entity.HasIndex(e => e.UserId, "idx_user_preferences_user_id");
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("user_id");
+            entity.Property(e => e.LastModelName)
+                .HasMaxLength(255)
+                .HasColumnName("last_model_name");
+
+            entity.HasOne(d => d.User).WithOne(p => p.UserPreference)
+                .HasForeignKey<UserPreference>(d => d.UserId)
+                .HasConstraintName("user_preferences_user_id_fkey");
         });
 
         OnModelCreatingPartial(modelBuilder);
