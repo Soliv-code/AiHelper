@@ -67,7 +67,7 @@ public class OllamaService : IOllamaService
                 Input = [text]
             };
 
-            // Вызываем метод EmbedAsync (убедись, что переменная клиента называется так же, как у тебя в классе: _ollamaApiClient или _ollamaClient)
+            // Вызываем метод EmbedAsync
             var response = await _ollamaClient.EmbedAsync(request);
             var floats = response.Embeddings?.FirstOrDefault();
 

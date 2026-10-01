@@ -13,9 +13,8 @@ public class Program
     {
         // Устанавливаем кодировку UTF8 для отображения emoji в консоли
         Console.OutputEncoding = System.Text.Encoding.UTF8;
-        // 
+        // Приветственное сообщение в консоль
         ConsoleUi.ShowWelcome();
-
         try
         {
             // 1. Читаем конфигурацию из appsettings.json

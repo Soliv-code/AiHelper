@@ -1,7 +1,6 @@
 ﻿using AiHelper.Data;
 using AiHelper.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
 
@@ -11,7 +10,7 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
 {
     private readonly AiHelperDbContext _dbContext = dbContext;
     private readonly IOllamaService _ollamaService = ollamaService;
-
+    // Создаём новую сессию чата
     public async Task<ChatSession> CreateNewSessionAsync(Guid userId, string modelName)
     {
         var session = new ChatSession
@@ -24,7 +23,7 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
         await _dbContext.SaveChangesAsync();
         return session;
     }
-
+    // Сохранение чата
     public async Task SaveMessageAsync(Guid sessionId, string role, string content)
     {
         // 1. Генерируем эмбеддинг для текста сообщения
@@ -41,7 +40,7 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
             ChatSessionId = sessionId,
             Role = role,
             Content = content,
-            Embedding = embedding, // <--- СОХРАНЯЕМ ВЕКТОР В БД
+            Embedding = embedding,      // <--- СОХРАНЯЕМ ВЕКТОР В БД
             CreatedAt = DateTime.UtcNow // <-- ИСПРАВЛЕНО: было Timestamp
         };
 
@@ -62,13 +61,11 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
 
         await _dbContext.SaveChangesAsync();
     }
-
+    // Ищем только пользовательские сообщения, у которых есть вектор, принадлежащие этому пользователю
+    // И ВАЖНО: только из чатов, созданных для текущей модели!
+    // Сортируем по косинусному расстоянию (чем меньше число, тем точнее совпадение по смыслу)
     public async Task<List<ChatMessage>> SearchRelevantContextAsync(Guid userId, string modelName, Vector queryVector, int limit = 3)
     {
-        // Ищем только пользовательские сообщения, у которых есть вектор, принадлежащие этому пользователю
-        // И ВАЖНО: только из чатов, созданных для текущей модели!
-        // Сортируем по косинусному расстоянию (чем меньше число, тем точнее совпадение по смыслу)
-
         return await _dbContext.ChatMessages
             .Where(m => m.Role == "user"
                      && m.ChatSession.UserId == userId
@@ -78,12 +75,12 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
             .Take(limit)
             .ToListAsync();
     }
-
+    // 
     public async Task<ChatSession?> GetSessionWithMessagesAsync(Guid sessionId)
         => await _dbContext.ChatSessions
             .Include(s => s.ChatMessages.OrderBy(m => m.CreatedAt)) // <-- ИСПРАВЛЕНО: было m.Timestamp
             .FirstOrDefaultAsync(s => s.Id == sessionId);
-
+    // 
     public async Task<List<ChatSession>> GetUserSessionsAsync(Guid userId, string modelName)
         => await _dbContext.ChatSessions
             .Where(s => s.UserId == userId 

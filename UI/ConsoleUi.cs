@@ -5,6 +5,16 @@ namespace AiHelper.UI;
 
 public static class ConsoleUi
 {
+    // Чат: Выводим приветственное сообщение
+    public static void ShowWelcome()
+        => AnsiConsole.MarkupLine("[cyan bold]👋 Привет! Запускаем AiHelper...[/]\n");
+    // Чат: Сообщение что нет моделей
+    public static void ShowNoModels()
+    {
+        AnsiConsole.MarkupLine("[red]❌ Локальные модели не найдены.[/]");
+        AnsiConsole.MarkupLine("[yellow]💡 Запустите в PowerShell: ollama pull qwen2.5-coder:latest[/]");
+    }
+    // Меню: Создание нового пользователя или выбор уже существующего
     public static string SelectOrCreateUser(List<User> users)
     {
         var choices = new List<string> { "🆕 Создать нового пользователя" };
@@ -17,22 +27,12 @@ public static class ConsoleUi
                 .AddChoices(choices)
         );
     }
-
+    // Меню: Создание нового пользователя => Введите имя пользователя
     public static string AskForNewUsername()
     {
         return AnsiConsole.Ask<string>("[cyan bold]Введите имя нового пользователя:[/]");
     }
-
-    // Выводим приветственное сообщение:
-    public static void ShowWelcome()
-        =>  AnsiConsole.MarkupLine("[cyan bold]👋 Привет! Запускаем AiHelper...[/]\n");
-    // Сообщение что нет моделей:
-    public static void ShowNoModels()
-    {
-        AnsiConsole.MarkupLine("[red]❌ Локальные модели не найдены.[/]");
-        AnsiConsole.MarkupLine("[yellow]💡 Запустите в PowerShell: ollama pull qwen2.5-coder:latest[/]");
-    }
-    // Меню выбора модели:
+    // Меню: Выбора модели
     public static string SelectModel(List<string> models)
     {
         return AnsiConsole.Prompt(
@@ -42,38 +42,7 @@ public static class ConsoleUi
                 .AddChoices(models)
         );
     }
-    // Выбор модели:
-    public static void ShowModelSelected(string modelName)
-    {
-        AnsiConsole.MarkupLine($"\n[green]✅ Модель [cyan]{modelName}[/] выбрана![/]");
-        AnsiConsole.MarkupLine("[yellow]💬 Начинаем чат. Введите 'exit' или 'выход' для завершения.[/]\n");
-    }
-    // 👨‍💻 Вы:
-    public static string GetUserInput()
-        => AnsiConsole.Ask<string>("[cyan bold]👨‍💻 Вы:[/]");
-
-    // 🤖 Ассистент:
-    public static void StartAssistantResponse()
-        => AnsiConsole.Markup("\n[green bold]🤖 AiHelper:[/] ");
-
-    // Конец сообщения ассистента (тупо переносим строку):
-    public static void EndAssistantResponse()
-        => Console.WriteLine("\n");
-
-    // Сообщение об окончании работы:
-    public static void ShowGoodbye()
-        => AnsiConsole.MarkupLine("\n[yellow]👋 Завершаем работу. До встречи![/]");
-
-    // Ошибочки: 
-    public static void ShowError(string message)
-    {
-        // Markup.Escape защищает текст от парсинга, если в message есть символы '[' или ']'
-        AnsiConsole.MarkupLine($"\n[red bold]❌ Ошибка:[/] {Markup.Escape(message)}");
-        AnsiConsole.MarkupLine("[yellow]💡 Убедитесь, что Ollama запущена и доступна по http://localhost:11434[/]");
-    }
-
-    public static void ShowInfo(string msg) => AnsiConsole.MarkupLine($"[blue]{msg}[/]");
-    
+    // Меню: Создать новый чат или продолжить
     public static ChatSession? SelectChatAction(List<ChatSession> sessions)
     {
         var choicesMap = new Dictionary<string, ChatSession?>
@@ -102,7 +71,33 @@ public static class ConsoleUi
 
         return choicesMap[selectedText];
     }
-
+    // Чат: Сообщение о выбранной модели
+    public static void ShowModelSelected(string modelName)
+    {
+        AnsiConsole.MarkupLine($"\n[green]✅ Модель [cyan]{modelName}[/] выбрана![/]");
+        AnsiConsole.MarkupLine("[yellow]💬 Начинаем чат. Введите 'exit' или 'выход' для завершения.[/]\n");
+    }
+    // Чат: 👨‍💻 Вы:
+    public static string GetUserInput()
+        => AnsiConsole.Ask<string>("[cyan bold]👨‍💻 Вы:[/]");
+    // Чат: 🤖 Ассистент:
+    public static void StartAssistantResponse()
+        => AnsiConsole.Markup("\n[green bold]🤖 AiHelper:[/] ");
+    // Чат: Конец сообщения 🤖 ассистента (тупо переносим строку)
+    public static void EndAssistantResponse()
+        => Console.WriteLine("\n");
+    // Чат: Сообщение об окончании работы
+    public static void ShowGoodbye()
+        => AnsiConsole.MarkupLine("\n[yellow]👋 Завершаем работу. До встречи![/]");
+    // Чат: Обработчик ошибок 
+    public static void ShowError(string message)
+    {
+        AnsiConsole.MarkupLine($"\n[red bold]❌ Ошибка:[/] {Markup.Escape(message)}");
+        AnsiConsole.MarkupLine("[yellow]💡 Убедитесь, что Ollama запущена и доступна по http://localhost:11434[/]");
+    }
+    // Чат: Информация
+    public static void ShowInfo(string msg) => AnsiConsole.MarkupLine($"[blue]{msg}[/]");
+    // Чат: Найдено похожих сообщений в чате
     public static void ShowContext(List<ChatMessage> messages)
     {
         // Заголовок
