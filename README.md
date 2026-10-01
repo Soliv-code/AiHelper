@@ -27,6 +27,11 @@
 ## 📁 Структура проекта
 ```text
 AiHelper/
+├── Components
+│   ├── AppContext.cs
+│   ├── ChatPage.cs
+│   ├── IAppContext.cs
+│   └── MainMenuPage.cs
 ├── Data
 │   └── AiHelperDbContext.cs
 ├── Docker
@@ -34,14 +39,17 @@ AiHelper/
 │   │   └── init.sql
 │   └── docker-compose.yml
 ├── Docs
-│   └── todo.md
+│   └── Todo.md
 ├── Models
+│   ├── AppState.cs
 │   ├── ChatMessage.cs
 │   ├── ChatSession.cs
-│   └── User.cs
+│   ├── User.cs
+│   └── UserPreference.cs
 ├── Services
 │   ├── ChatHistoryService.cs
 │   ├── IChatHistoryService.cs
+│   ├── InfrastructureValidator.cs
 │   ├── IOllamaService.cs
 │   ├── IUserService.cs
 │   ├── OllamaService.cs
