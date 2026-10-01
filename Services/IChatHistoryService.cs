@@ -12,4 +12,17 @@ public interface IChatHistoryService
     Task<List<ChatSession>> GetUserSessionsAsync(Guid userId, string modelName);
     // ДОБАВЛЕНО: modelName для фильтрации контекста
     Task<List<ChatMessage>> SearchRelevantContextAsync(Guid userId, string modelName, Vector queryVector, int limit = 3);
+    /// <summary>
+    /// Переименовать чат
+    /// </summary>
+    /// <param name="sessionId"></param>
+    /// <param name="newTitle"></param>
+    /// <returns></returns>
+    Task RenameSessionAsync(Guid sessionId, string newTitle);
+    /// <summary>
+    /// Удалить чат
+    /// </summary>
+    /// <param name="sessionId"></param>
+    /// <returns></returns>
+    Task DeleteSessionAsync(Guid sessionId);
 }
