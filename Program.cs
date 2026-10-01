@@ -33,6 +33,10 @@ public class Program
 
             using var dbContext = new AiHelperDbContext(optionsBuilder.Options);
 
+            // 🛑 СТРОГАЯ ПРОВЕРКА ИНФРАСТРУКТУРЫ (Fail Fast)
+            // Если Docker или Ollama не запущены, приложение выведет красивую ошибку и завершится.
+            await InfrastructureValidator.ValidateAsync(dbContext);
+
             // Инициализируем сервисы
             var userService = new UserService(dbContext);
             var ollamaService = new OllamaService();
