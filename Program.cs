@@ -39,7 +39,7 @@ public class Program
 
             // Инициализируем сервисы
             var userService = new UserService(dbContext);
-            var ollamaService = new OllamaService();
+            var ollamaService = new OllamaService(configuration);
             //var historyService = new ChatHistoryService(dbContext);
             var historyService = new ChatHistoryService(dbContext, ollamaService);
 

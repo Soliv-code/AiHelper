@@ -1,24 +1,32 @@
-﻿using OllamaSharp;
+﻿using Microsoft.Extensions.Configuration;
+using OllamaSharp;
 using OllamaSharp.Models;
 using Pgvector;
-using System.Runtime.InteropServices;
 
 namespace AiHelper.Services;
 
 public class OllamaService : IOllamaService
 {
     private readonly OllamaApiClient _ollamaClient;
+    private readonly List<string> _excludedModels;
    
-    public OllamaService(string apiUri = "http://127.0.0.1:11434")
+    public OllamaService(IConfiguration configuration ,string apiUri = "http://127.0.0.1:11434")
     {
         _ollamaClient = new OllamaApiClient(apiUri);
+        _excludedModels = configuration
+            .GetSection("Ollama:ExcludedModels")
+            .Get<List<string>>() ?? new List<string>();
     }
 
     public async Task<List<string>> GetAvailableModelsAsync()
     {
         var models = await _ollamaClient.ListLocalModelsAsync();
         // Тоже самое что и models.Select(m => m.Name).OrderBy(n => n).ToList();, т.е. сокращаем .ToList
-        return [.. models.Select(m => m.Name).OrderBy(n => n)];
+        return [.. models
+            .Where(m => !_excludedModels.Contains(m.Name)) // Фильтр по моделям из конфига
+            .Select(m => m.Name).OrderBy(n => n)
+            .OrderBy(n => n)
+            ];
     }
 
     public async IAsyncEnumerable<string> StreamChatResponseAsync(string modelName, string userMessage, List<(string role, string content)> history)
