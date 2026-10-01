@@ -87,5 +87,25 @@ public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService olla
                      && s.ModelName == modelName)
             .OrderByDescending(s => s.UpdatedAt)
             .ToListAsync();
-
+    // Переименовываем чат:
+    public async Task RenameSessionAsync(Guid sessionId, string newTitle)
+    {
+        var session = await _dbContext.ChatSessions.FindAsync(sessionId);
+        if (session != null)
+        {
+            session.Title = string.IsNullOrWhiteSpace(newTitle) ? "Без названия" : newTitle;
+            session.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+        }
+    }
+    // Удаляем чат:
+    public async Task DeleteSessionAsync(Guid sessionId)
+    {
+        var session = await _dbContext.ChatSessions.FindAsync(sessionId);
+        if (session != null)
+        {
+            _dbContext.ChatSessions.Remove(session);
+            await _dbContext.SaveChangesAsync();
+        }
+    }
 }

@@ -43,32 +43,62 @@ public static class ConsoleUi
         );
     }
     // Меню: Создать новый чат или продолжить
-    public static ChatSession? SelectChatAction(List<ChatSession> sessions)
+    public static (string Action, ChatSession? Session) SelectChatAction(List<ChatSession> sessions)
     {
         var choicesMap = new Dictionary<string, ChatSession?>
         {
-            ["✨ Создать новый чат"] = null
+            ["✨ Создать новый чат"] = null,
+            ["✏️ Переименовать чат"] = null,  // Специальный маркер
+            ["🗑️ Удалить чат"] = null        // Специальный маркер
         };
 
         foreach (var session in sessions)
         {
-            // Безопасно берем заголовок
             var title = string.IsNullOrWhiteSpace(session.Title) ? "Без названия" : session.Title;
-
-            // Безопасно форматируем дату: если UpdatedAt не null, форматируем, иначе пишем "Неизвестно"
             var dateStr = session.UpdatedAt?.ToString("dd.MM HH:mm") ?? "Неизвестно";
-
             var displayText = $"💬 {title} (Обновлен: {dateStr})";
             choicesMap[displayText] = session;
         }
 
         var selectedText = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
-                .Title("[green bold]📂 Что будем делать?[/]")
-                .PageSize(10)
-                .AddChoices(choicesMap.Keys)
+            .Title("[green bold]📂 Что будем делать?[/]")
+            .PageSize(10)
+            .AddChoices(choicesMap.Keys)
         );
 
+        // Возвращаем действие и саму сессию (если она выбрана)
+        if (selectedText == "✏️ Переименовать чат") return ("Rename", null);
+        if (selectedText == "🗑️ Удалить чат") return ("Delete", null);
+        if (selectedText == "✨ Создать новый чат") return ("CreateNew", null);
+
+        return ("Select", choicesMap[selectedText]);
+    }
+    // Меню: Удаление чата
+    public static ChatSession? SelectChatFromList(List<ChatSession> sessions, string title = "📂 Выберите чат:")
+    {
+        if (sessions.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]⚠️ У вас пока нет чатов.[/]");
+            return null;
+        }
+
+        var choicesMap = new Dictionary<string, ChatSession>();
+
+        foreach (var session in sessions)
+        {
+            var sessionTitle = string.IsNullOrWhiteSpace(session.Title) ? "Без названия" : session.Title;
+            var dateStr = session.UpdatedAt?.ToString("dd.MM HH:mm") ?? "Неизвестно";
+            var displayText = $"💬 {sessionTitle} (Обновлен: {dateStr})";
+            choicesMap[displayText] = session;
+        }
+
+        var selectedText = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+            .Title($"[green bold]{title}[/]")
+            .PageSize(10)
+            .AddChoices(choicesMap.Keys)
+        );
         return choicesMap[selectedText];
     }
     // Чат: Сообщение о выбранной модели
@@ -113,4 +143,5 @@ public static class ConsoleUi
         // Пустая строка для отступа
         AnsiConsole.WriteLine();
     }
+
 }
