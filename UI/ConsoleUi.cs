@@ -15,9 +15,13 @@ public static class ConsoleUi
         AnsiConsole.MarkupLine("[yellow]💡 Запустите в PowerShell: ollama pull qwen2.5-coder:latest[/]");
     }
     // Меню: Создание нового пользователя или выбор уже существующего
-    public static string SelectOrCreateUser(List<User> users)
+    public static string? SelectOrCreateUser(List<User> users)
     {
-        var choices = new List<string> { "🆕 Создать нового пользователя" };
+        var choices = new List<string>
+    {
+        "⬅️ Назад",
+        "🆕 Создать нового пользователя"
+    };
         choices.AddRange(users.Select(u => $"👤 {u.Username}"));
 
         return AnsiConsole.Prompt(
@@ -33,13 +37,16 @@ public static class ConsoleUi
         return AnsiConsole.Ask<string>("[cyan bold]Введите имя нового пользователя:[/]");
     }
     // Меню: Выбора модели
-    public static string SelectModel(List<string> models)
+    public static string? SelectModel(List<string> models)
     {
+        var choices = new List<string> { "⬅️ Назад" };
+        choices.AddRange(models);
+
         return AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("[green bold]🤖 Выберите модель для чата:[/]")
                 .PageSize(10)
-                .AddChoices(models)
+                .AddChoices(choices)
         );
     }
     // Меню: Создать новый чат или продолжить
