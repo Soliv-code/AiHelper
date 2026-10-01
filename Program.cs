@@ -34,12 +34,19 @@ public class Program
             services.AddDbContext<AiHelperDbContext>(options =>
                 options.UseNpgsql(connectionString, o => o.UseVector()));
 
-            services.AddSingleton<OllamaService>();
+            // 🔥 ЖЕЛЕЗОБЕТОННАЯ РЕГИСТРАЦИЯ:
+            // Создаем один экземпляр и регистрируем его и как класс, и как интерфейс.
+            // Теперь и MainMenuPage, и ChatHistoryService получат ОДИН И ТОТ ЖЕ объект.
+            var ollamaInstance = new OllamaService(configuration);
+            services.AddSingleton<OllamaService>(ollamaInstance);
+            services.AddSingleton<IOllamaService>(ollamaInstance);
+
             services.AddSingleton<UserService>();
             services.AddSingleton<ChatHistoryService>();
 
             services.AddSingleton<IAppContext, AppContext>();
             services.AddTransient<MainMenuPage>();
+
 
             var serviceProvider = services.BuildServiceProvider();
 

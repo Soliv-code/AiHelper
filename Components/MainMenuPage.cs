@@ -57,10 +57,9 @@ public class MainMenuPage : IComponent
                     }
                     else
                     {
-                        // ВРЕМЕННАЯ ЗАГЛУШКА для проверки навигации
-                        AnsiConsole.MarkupLine("\n[yellow]⚠️ Логика чата будет перенесена сюда на Шаге 3.[/]");
-                        AnsiConsole.MarkupLine("[dim]Нажмите любую клавишу для возврата в меню...[/]");
-                        Console.ReadKey();
+                        // Активируем компонент чата, передавая ему пользователя и модель
+                        var chatPage = new ChatPage(_appContext, _currentUser, _selectedModel);
+                        await chatPage.RunAsync();
                     }
                     break;
 
