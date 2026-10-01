@@ -52,3 +52,12 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 
 CREATE TRIGGER update_chat_sessions_updated_at BEFORE UPDATE ON chat_sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Таблица предпочтений пользователя (для сохранения последней выбранной модели и будущих настроек)
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    last_model_name VARCHAR(255)
+);
+
+-- Создаем индекс для быстрого поиска (хотя тут PK, но для порядка)
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
