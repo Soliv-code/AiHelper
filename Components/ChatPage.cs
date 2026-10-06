@@ -21,7 +21,9 @@ public class ChatPage : IComponent
     public async Task RunAsync()
     {
         var historyService = _appContext.GetService<ChatHistoryService>();
-        var ollamaService = _appContext.GetService<OllamaService>();
+        var ollamaService = _appContext.GetService<IOllamaService>();
+        var documentRagService = _appContext.GetService<IDocumentRagService>(); // <-- ДОБАВИТЬ ЭТО
+
 
         // 1. Выбор или создание чата
         var userSessions = await historyService.GetUserSessionsAsync(_currentUser.Id, _selectedModel);
@@ -69,6 +71,17 @@ public class ChatPage : IComponent
                 break;
         }
 
+        // ==========================================
+        // 📜 ШПАРГАЛКА ПО КОМАНДАМ (строго для чата)
+        // ==========================================
+        AnsiConsole.MarkupLine("\n[cyan bold]💡 Доступные команды в этом чате:[/]");
+        AnsiConsole.MarkupLine("  [yellow]/list_kbs[/]                   - Показать доступные базы знаний");
+        AnsiConsole.MarkupLine("  [yellow]/attach_kb \"Имя\"[/]          - Подключить базу знаний к этому чату");
+        AnsiConsole.MarkupLine("  [yellow]/detach_kb \"Имя\"[/]          - Отключить базу знаний");
+        AnsiConsole.MarkupLine("  [yellow]/help[/] или [yellow]/?[/]     - Показать эту подсказку");
+        AnsiConsole.MarkupLine("  [yellow]/exit[/], [yellow]/quit[/], [yellow]/e[/], [yellow]/q[/]  - Выйти в главное меню\n");
+        // ==========================================
+
         // 2. Основной цикл чата
         while (true)
         {
@@ -106,10 +119,93 @@ public class ChatPage : IComponent
                 continue;
             }
 
+            // ==========================================
+            // 📚 ОБРАБОТКА КОМАНД БАЗ ЗНАНИЙ
+            // ==========================================
+            var trimmedMsg = userMessage.Trim();
+
+            // 1. Список баз
+            if (trimmedMsg.Equals("/list_kbs", StringComparison.OrdinalIgnoreCase))
+            {
+                var attachedKbs = await documentRagService.GetAttachedKbsForSessionAsync(currentSession.Id);
+                var allKbs = await documentRagService.GetUserKnowledgeBasesAsync(_currentUser.Id);
+
+                AnsiConsole.MarkupLine("\n[cyan bold]📚 Доступные Базы Знаний:[/]");
+                if (!allKbs.Any())
+                {
+                    AnsiConsole.MarkupLine("  [dim]У вас пока нет баз знаний. Создайте их в главном меню.[/]");
+                }
+                else
+                {
+                    foreach (var kb in allKbs)
+                    {
+                        var isAttached = attachedKbs.Any(k => k.Id == kb.Id);
+                        var status = isAttached ? "[green]✅ Подключена[/]" : "[dim]○ Не подключена[/]";
+                        AnsiConsole.MarkupLine($"  {status} [cyan]{kb.Name}[/]");
+                    }
+                }
+                AnsiConsole.MarkupLine("");
+                continue; // Пропускаем отправку сообщения в LLM
+            }
+
+            // 2. Подключение базы
+            if (trimmedMsg.StartsWith("/attach_kb ", StringComparison.OrdinalIgnoreCase))
+            {
+                var kbName = trimmedMsg.Substring("/attach_kb ".Length).Trim().Trim('"');
+                var availableKbs = await documentRagService.GetUserKnowledgeBasesAsync(_currentUser.Id);
+                var kbToAttach = availableKbs.FirstOrDefault(k => k.Name.Equals(kbName, StringComparison.OrdinalIgnoreCase));
+
+                if (kbToAttach == null)
+                {
+                    AnsiConsole.MarkupLine($"[red]❌ База знаний '{kbName}' не найдена. Проверьте название или используйте /list_kbs.[/]");
+                }
+                else
+                {
+                    await documentRagService.AttachKbToSessionAsync(currentSession.Id, kbToAttach.Id);
+                    AnsiConsole.MarkupLine($"[green]✅ База знаний [cyan]{kbToAttach.Name}[/] успешно подключена к этому чату![/]");
+                }
+                continue; // Пропускаем отправку сообщения в LLM
+            }
+
+            // 3. Отключение базы
+            if (trimmedMsg.StartsWith("/detach_kb ", StringComparison.OrdinalIgnoreCase))
+            {
+                var kbName = trimmedMsg.Substring("/detach_kb ".Length).Trim().Trim('"');
+                var attachedKbs = await documentRagService.GetAttachedKbsForSessionAsync(currentSession.Id);
+                var kbToDetach = attachedKbs.FirstOrDefault(k => k.Name.Equals(kbName, StringComparison.OrdinalIgnoreCase));
+
+                if (kbToDetach == null)
+                {
+                    AnsiConsole.MarkupLine($"[red]❌ База знаний '{kbName}' не подключена к этому чату.[/]");
+                }
+                else
+                {
+                    await documentRagService.DetachKbFromSessionAsync(currentSession.Id, kbToDetach.Id);
+                    AnsiConsole.MarkupLine($"[yellow]⛔ База знаний [cyan]{kbToDetach.Name}[/] отключена от этого чата.[/]");
+                }
+                continue; // Пропускаем отправку сообщения в LLM
+            }
+            // 4. Помощь
+            if (trimmedMsg.Equals("/help", StringComparison.OrdinalIgnoreCase) || trimmedMsg.Equals("/?", StringComparison.OrdinalIgnoreCase))
+            {
+                AnsiConsole.MarkupLine("\n[cyan bold]💡 Доступные команды чата:[/]");
+                AnsiConsole.MarkupLine("  [yellow]/list_kbs[/]        - Показать доступные базы знаний");
+                AnsiConsole.MarkupLine("  [yellow]/attach_kb \"Имя\"[/] - Подключить базу знаний к этому чату");
+                AnsiConsole.MarkupLine("  [yellow]/detach_kb \"Имя\"[/] - Отключить базу знаний");
+                AnsiConsole.MarkupLine("  [yellow]/exit[/], [yellow]/quit[/], [yellow]/e[/], [yellow]/q[/]   - Выйти в главное меню\n");
+                continue;
+            }
+            // ==========================================
+
             // RAG: Поиск контекста ДО сохранения сообщения
-            var currentMessageVector = await ollamaService.GetEmbeddingAsync(userMessage);
+            // ==========================================
+            // 🧠 RAG: ПОИСК КОНТЕКСТА ДО ОТВЕТА МОДЕЛИ
+            // ==========================================
+            var currentMessageVector = await ollamaService.GetEmbeddingAsync(userMessage, isQuery: true);
+
             if (currentMessageVector != null)
             {
+                // 1. Поиск в истории прошлых чатов (как было)
                 var similarMessages = await historyService.SearchRelevantContextAsync(
                     _currentUser.Id,
                     _selectedModel,
@@ -118,15 +214,55 @@ public class ChatPage : IComponent
 
                 if (similarMessages.Any())
                 {
-                    ConsoleUi.ShowContext(similarMessages);
-                    var contextPrompt = "Контекст из прошлых чатов пользователя (модель " + _selectedModel + "):\n";
+                    var chatContextPrompt = "[ИСТОРИЯ ЧАТОВ]: В прошлых диалогах обсуждалось:\n";
                     foreach (var msg in similarMessages)
                     {
-                        contextPrompt += $"- {msg.Content}\n";
+                        chatContextPrompt += $"- {msg.Content}\n";
                     }
-                    memoryHistory.Add(("system", contextPrompt));
+                    memoryHistory.Add(("system", chatContextPrompt));
+                }
+
+                // 2. 🔥 НОВОЕ: Поиск в подключенных Базах Знаний (Document RAG)
+                var attachedKbs = await documentRagService.GetAttachedKbsForSessionAsync(currentSession.Id);
+
+                if (attachedKbs.Any())
+                {
+                    var attachedKbIds = attachedKbs.Select(kb => kb.Id).ToList();
+
+                    // Ищем релевантные чанки в подключенных базах
+                    var relevantChunks = await documentRagService.SearchRelevantChunksAsync(
+                        attachedKbIds,
+                        userMessage,
+                        limit: 3); // Можно увеличить до 5, если нужно больше контекста
+
+                    if (relevantChunks.Any())
+                    {
+                        /*
+                        // 🔍 DEBUG: Выводим сами чанки, чтобы увидеть, что именно нашла система
+                        AnsiConsole.MarkupLine("\n[yellow bold]🐛 DEBUG: Найденные чанки для промпта:[/]");
+                        foreach (var chunk in relevantChunks)
+                        {
+                            AnsiConsole.MarkupLine($"[dim]📍 Источник: {chunk.BreadcrumbPath}[/]");
+                            AnsiConsole.MarkupLine($"[cyan]{chunk.ChunkText.Trim()}[/]");
+                            AnsiConsole.MarkupLine("[dim]---[/]");
+                        }
+                        AnsiConsole.MarkupLine(""); // Пустая строка для красоты
+                        */
+
+                        var docContextPrompt = "\n[СТРОГАЯ ИНСТРУКЦИЯ]: Ниже приведена информация из подключенных баз знаний. Ты ОБЯЗАН отвечать ИСКЛЮЧИТЕЛЬНО на основе этого текста. Если в тексте нет прямого ответа на вопрос, так и скажи: 'В предоставленных документах нет информации об этом'. НЕ ВЫДУМЫВАЙ факты и не используй свои общие знания, если они противоречат документу!\n\n";
+                        foreach (var chunk in relevantChunks)
+                        {
+                            docContextPrompt += $"📍 Источник: {chunk.BreadcrumbPath}\n";
+                            docContextPrompt += $"📄 Текст: {chunk.ChunkText.Trim()}\n";
+                            docContextPrompt += "---\n";
+                        }
+                        memoryHistory.Add(("system", docContextPrompt));
+
+                        AnsiConsole.MarkupLine($"[dim]🔍 Найдено {relevantChunks.Count} релевантных фрагментов в документах.[/]");
+                    }
                 }
             }
+            // ==========================================
 
             // Сохранение сообщения пользователя
             await historyService.SaveMessageAsync(currentSession.Id, "user", userMessage);

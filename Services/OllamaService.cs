@@ -58,16 +58,22 @@ public class OllamaService : IOllamaService
         }
     }
 
-    public async Task<Vector?> GetEmbeddingAsync(string text)
+    private const string EmbeddingPrefix = "Represent this document for searching relevant passages: ";
+
+    public async Task<Vector?> GetEmbeddingAsync(string text, bool isQuery = false)
     {
         try
         {
+            // Добавляем префикс к тексту для улучшения качества эмбеддингов
+            const string prefix = "Represent this document for searching relevant passages: ";
+            var textToEmbed = prefix + text;
+
+
             // Создаем запрос на генерацию эмбеддинга
             var request = new EmbedRequest
             {
-                Model = _embeddingModel, // <-- ИСПОЛЬЗУЕМ ПОЛЕ, а не хардкод!
-                // Оборачиваем текст в массив, так как Ollama API принимает коллекцию строк
-                Input = [text]
+                Model = _embeddingModel, // Читаем из конфига (bge-m3)
+                Input = [textToEmbed]
             };
 
             // Вызываем метод EmbedAsync

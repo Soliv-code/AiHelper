@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using AiHelper.Models;
+﻿using AiHelper.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AiHelper.Data;
@@ -25,6 +23,10 @@ public partial class AiHelperDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
+
+    public virtual DbSet<KnowledgeBase> KnowledgeBases { get; set; }
+    public virtual DbSet<Document> Documents { get; set; }
+    public virtual DbSet<DocumentChunk> DocumentChunks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -111,7 +113,7 @@ public partial class AiHelperDbContext : DbContext
             entity.HasMany(d => d.Kbs).WithMany(p => p.ChatSessions)
                 .UsingEntity<Dictionary<string, object>>(
                     "ChatSessionKb",
-                    r => r.HasOne<KnowledgeBasis>().WithMany()
+                    r => r.HasOne<KnowledgeBase>().WithMany()
                         .HasForeignKey("KbId")
                         .HasConstraintName("chat_session_kbs_kb_id_fkey"),
                     l => l.HasOne<ChatSession>().WithMany()
@@ -179,7 +181,7 @@ public partial class AiHelperDbContext : DbContext
                 .HasConstraintName("document_chunks_document_id_fkey");
         });
 
-        modelBuilder.Entity<KnowledgeBasis>(entity =>
+        modelBuilder.Entity<KnowledgeBase>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("knowledge_bases_pkey");
 
@@ -253,6 +255,5 @@ public partial class AiHelperDbContext : DbContext
 
         OnModelCreatingPartial(modelBuilder);
     }
-
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

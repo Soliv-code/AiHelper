@@ -38,15 +38,15 @@ public class Program
             // Создаем один экземпляр и регистрируем его и как класс, и как интерфейс.
             // Теперь и MainMenuPage, и ChatHistoryService получат ОДИН И ТОТ ЖЕ объект.
             var ollamaInstance = new OllamaService(configuration);
-            services.AddSingleton<OllamaService>(ollamaInstance);
+            //services.AddSingleton<OllamaService>(ollamaInstance);
             services.AddSingleton<IOllamaService>(ollamaInstance);
-
             services.AddSingleton<UserService>();
             services.AddSingleton<ChatHistoryService>();
-
+            services.AddSingleton<IDocumentRagService, DocumentRagService>();
             services.AddSingleton<IAppContext, AppContext>();
             services.AddTransient<MainMenuPage>();
 
+            services.AddTransient<KnowledgeBasePage>();
 
             var serviceProvider = services.BuildServiceProvider();
 

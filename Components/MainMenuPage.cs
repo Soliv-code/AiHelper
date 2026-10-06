@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AiHelper.Models;
+﻿using AiHelper.Models;
 using AiHelper.Services;
 using AiHelper.UI;
 using Spectre.Console;
@@ -51,6 +48,7 @@ public class MainMenuPage : IComponent
                     .PageSize(10)
                     .AddChoices(
                         "💬 Начать чат",
+                        "📚 Базы знаний", // <-- ДОБАВИТЬ
                         "👤 Сменить пользователя",
                         "🤖 Сменить модель",
                         "🚪 Выход из приложения"
@@ -59,6 +57,19 @@ public class MainMenuPage : IComponent
 
             switch (choice)
             {
+                case "📚 Базы знаний":
+                    if (_currentUser == null)
+                    {
+                        AnsiConsole.MarkupLine("\n[red]❌ Сначала выберите пользователя![/]");
+                        await Task.Delay(1500);
+                    }
+                    else
+                    {
+                        var kbPage = new KnowledgeBasePage(_appContext, _currentUser);
+                        await kbPage.RunAsync();
+                    }
+                    break;
+
                 case "🚪 Выход из приложения":
                     ConsoleUi.ShowGoodbye();
                     await Task.Delay(1000);
@@ -145,7 +156,7 @@ public class MainMenuPage : IComponent
             return;
         }
 
-        var ollamaService = _appContext.GetService<OllamaService>();
+        var ollamaService = _appContext.GetService<IOllamaService>(); // <-- Используем интерфейс!
         var models = await ollamaService.GetAvailableModelsAsync();
 
         if (models.Count == 0)
