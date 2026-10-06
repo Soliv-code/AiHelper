@@ -20,4 +20,6 @@ public partial class ChatSession
     public virtual ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
 
     public virtual User? User { get; set; }
+
+    public virtual ICollection<KnowledgeBasis> Kbs { get; set; } = new List<KnowledgeBasis>();
 }

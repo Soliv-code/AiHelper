@@ -107,6 +107,106 @@ public partial class AiHelperDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("chat_sessions_user_id_fkey");
+
+            entity.HasMany(d => d.Kbs).WithMany(p => p.ChatSessions)
+                .UsingEntity<Dictionary<string, object>>(
+                    "ChatSessionKb",
+                    r => r.HasOne<KnowledgeBasis>().WithMany()
+                        .HasForeignKey("KbId")
+                        .HasConstraintName("chat_session_kbs_kb_id_fkey"),
+                    l => l.HasOne<ChatSession>().WithMany()
+                        .HasForeignKey("ChatSessionId")
+                        .HasConstraintName("chat_session_kbs_chat_session_id_fkey"),
+                    j =>
+                    {
+                        j.HasKey("ChatSessionId", "KbId").HasName("chat_session_kbs_pkey");
+                        j.ToTable("chat_session_kbs");
+                        j.IndexerProperty<Guid>("ChatSessionId").HasColumnName("chat_session_id");
+                        j.IndexerProperty<Guid>("KbId").HasColumnName("kb_id");
+                    });
+        });
+
+        modelBuilder.Entity<Document>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("documents_pkey");
+
+            entity.ToTable("documents");
+
+            entity.HasIndex(e => e.KbId, "idx_doc_kb_id");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.FileContent).HasColumnName("file_content");
+            entity.Property(e => e.FileName)
+                .HasMaxLength(255)
+                .HasColumnName("file_name");
+            entity.Property(e => e.KbId).HasColumnName("kb_id");
+            entity.Property(e => e.UploadedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("uploaded_at");
+
+            entity.HasOne(d => d.Kb).WithMany(p => p.Documents)
+                .HasForeignKey(d => d.KbId)
+                .HasConstraintName("documents_kb_id_fkey");
+        });
+
+        modelBuilder.Entity<DocumentChunk>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("document_chunks_pkey");
+
+            entity.ToTable("document_chunks");
+
+            entity.HasIndex(e => e.DocumentId, "idx_chunk_doc_id");
+
+            entity.HasIndex(e => e.Embedding, "idx_chunk_embedding")
+                .HasMethod("hnsw")
+                .HasOperators(new[] { "vector_cosine_ops" });
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.BreadcrumbPath).HasColumnName("breadcrumb_path");
+            entity.Property(e => e.ChunkIndex).HasColumnName("chunk_index");
+            entity.Property(e => e.ChunkText).HasColumnName("chunk_text");
+            entity.Property(e => e.DocumentId).HasColumnName("document_id");
+            entity.Property(e => e.Embedding)
+                .HasMaxLength(1024)
+                .HasColumnName("embedding");
+
+            entity.HasOne(d => d.Document).WithMany(p => p.DocumentChunks)
+                .HasForeignKey(d => d.DocumentId)
+                .HasConstraintName("document_chunks_document_id_fkey");
+        });
+
+        modelBuilder.Entity<KnowledgeBasis>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("knowledge_bases_pkey");
+
+            entity.ToTable("knowledge_bases");
+
+            entity.HasIndex(e => e.IsPublic, "idx_kb_is_public");
+
+            entity.HasIndex(e => e.UserId, "idx_kb_user_id");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.IsPublic)
+                .HasDefaultValue(false)
+                .HasColumnName("is_public");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.KnowledgeBases)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("knowledge_bases_user_id_fkey");
         });
 
         modelBuilder.Entity<User>(entity =>

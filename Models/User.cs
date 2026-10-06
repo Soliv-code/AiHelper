@@ -15,5 +15,7 @@ public partial class User
 
     public virtual ICollection<ChatSession> ChatSessions { get; set; } = new List<ChatSession>();
 
+    public virtual ICollection<KnowledgeBasis> KnowledgeBases { get; set; } = new List<KnowledgeBasis>();
+
     public virtual UserPreference? UserPreference { get; set; }
 }
