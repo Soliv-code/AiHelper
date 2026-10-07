@@ -284,17 +284,63 @@ public class KnowledgeBasePage(IAppContext appContext, User currentUser) : IComp
             return;
         }
 
-        var table = new Table();
-        table.AddColumn("Имя файла");
-        table.AddColumn("Дата загрузки");
-        table.AddColumn("ID");
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .Title($"[bold cyan]📚 Документы в базе '{Markup.Escape(kb.Name)}'[/]")
+            .Caption($"[dim]Всего документов: {documents.Count}[/]");
+
+        table.AddColumn(new TableColumn("[bold]📄 Файл[/]").Centered());
+        table.AddColumn(new TableColumn("[bold]📏 Размер[/]").RightAligned());
+        table.AddColumn(new TableColumn("[bold]🧩 Чанков[/]").Centered());
+        table.AddColumn(new TableColumn("[bold]🕐 Загружен[/]").Centered());
 
         foreach (var doc in documents)
         {
-            table.AddRow(doc.FileName, doc.UploadedAt?.ToString("dd.MM.yyyy HH:mm") ?? "N/A", doc.Id.ToString());
+            // Конвертируем размер файла в читаемый формат
+            var sizeText = FormatFileSize(doc.FileSize);
+
+            // Получаем количество чанков
+            var chunkCount = await _documentRagService.GetChunkCountAsync(doc.Id);
+
+            // Форматируем дату
+            var dateText = doc.UploadedAt?.ToString("dd.MM.yyyy HH:mm") ?? "N/A";
+
+            // Цветовая подсветка: если чанков мало - жёлтый, если много - зелёный
+            var chunkColor = chunkCount switch
+            {
+                0 => "[red]0[/]",
+                < 5 => "[yellow]" + chunkCount + "[/]",
+                _ => "[green]" + chunkCount + "[/]"
+            };
+
+            table.AddRow(
+                $"[cyan]{Markup.Escape(doc.FileName)}[/]",
+                $"[dim]{sizeText}[/]",
+                chunkColor,
+                $"[dim]{dateText}[/]"
+            );
         }
 
         AnsiConsole.Write(table);
         Console.ReadKey();
+    }
+
+    // Вспомогательный метод для форматирования размера файла
+    private static string FormatFileSize(long? bytes)
+    {
+        if (bytes == null || bytes == 0) return "0 B";
+
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        int order = 0;
+        double size = bytes.Value;
+
+        while (size >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+
+        return $"{size:0.##} {sizes[order]}";
     }
 }
