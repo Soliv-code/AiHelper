@@ -4,6 +4,7 @@ using Markdig;
 using Markdig.Syntax;
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
+using Spectre.Console;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -255,25 +256,42 @@ public class DocumentRagService(AiHelperDbContext dbContext, IOllamaService olla
             chunks.Add((currentChunkText.Trim(), currentBreadcrumb));
         }
 
-        // Векторизуем и сохраняем чанки
-        foreach (var (text, breadcrumb) in chunks)
-        {
-            var embedding = await _ollamaService.GetEmbeddingAsync(text, isQuery: false);
-
-            if (embedding != null)
+        // Векторизуем и сохраняем чанки с красивым прогресс-баром
+        await AnsiConsole.Progress()
+            .AutoClear(false)
+            .Columns(new ProgressColumn[]
             {
-                var chunk = new DocumentChunk
-                {
-                    DocumentId = documentId,
-                    ChunkIndex = chunkIndex++,
-                    BreadcrumbPath = breadcrumb,
-                    ChunkText = text,
-                    Embedding = embedding
-                };
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new ElapsedTimeColumn(),
+                new SpinnerColumn()
+            })
+            .StartAsync(async ctx =>
+            {
+                var task = ctx.AddTask("[cyan]Векторизация чанков[/]", maxValue: chunks.Count);
 
-                _dbContext.DocumentChunks.Add(chunk);
-            }
-        }
+                foreach (var (text, breadcrumb) in chunks)
+                {
+                    var embedding = await _ollamaService.GetEmbeddingAsync(text, isQuery: false);
+
+                    if (embedding != null)
+                    {
+                        var chunk = new DocumentChunk
+                        {
+                            DocumentId = documentId,
+                            ChunkIndex = chunkIndex++,
+                            BreadcrumbPath = breadcrumb,
+                            ChunkText = text,
+                            Embedding = embedding
+                        };
+
+                        _dbContext.DocumentChunks.Add(chunk);
+                    }
+
+                    task.Increment(1);
+                }
+            });
 
         await _dbContext.SaveChangesAsync();
     }
