@@ -1,4 +1,7 @@
-﻿using AiHelper.Models;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using AiHelper.Models;
 using AiHelper.Services;
 using AiHelper.UI;
 using Spectre.Console;
@@ -40,7 +43,9 @@ public class MainMenuPage : IComponent
         {
             Console.Clear();
             ConsoleUi.ShowWelcome();
-            ShowStatus();
+
+            // 🔥 НОВОЕ: Красивая панель статистики вместо простого ShowStatus()
+            await ShowDashboardAsync();
 
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
@@ -48,7 +53,7 @@ public class MainMenuPage : IComponent
                     .PageSize(10)
                     .AddChoices(
                         "💬 Начать чат",
-                        "📚 Базы знаний", // <-- ДОБАВИТЬ
+                        "📚 Базы знаний",
                         "👤 Сменить пользователя",
                         "🤖 Сменить модель",
                         "🚪 Выход из приложения"
@@ -99,18 +104,53 @@ public class MainMenuPage : IComponent
         }
     }
 
-    private void ShowStatus()
+    // 🔥 НОВЫЙ МЕТОД: Информационная панель (Dashboard)
+    private async Task ShowDashboardAsync()
     {
-        var userInfo = _currentUser != null
-            ? $"[green]{_currentUser.Username}[/]"
-            : "[red]не выбран[/]";
+        var userInfo = _currentUser != null ? $"[green]{_currentUser.Username}[/]" : "[red]не выбран[/]";
+        var modelInfo = _selectedModel != null ? $"[green]{_selectedModel}[/]" : "[red]не выбрана[/]";
 
-        var modelInfo = _selectedModel != null
-            ? $"[green]{_selectedModel}[/]"
-            : "[red]не выбрана[/]";
+        int kbCount = 0;
+        int docCount = 0;
+        int chunkCount = 0;
 
-        AnsiConsole.MarkupLine($"👤 Пользователь: {userInfo}");
-        AnsiConsole.MarkupLine($"🤖 Модель: {modelInfo}");
+        // Собираем статистику только если пользователь выбран
+        if (_currentUser != null)
+        {
+            var ragService = _appContext.GetService<IDocumentRagService>();
+            var kbs = await ragService.GetUserKnowledgeBasesAsync(_currentUser.Id);
+            kbCount = kbs.Count;
+
+            foreach (var kb in kbs)
+            {
+                var docs = await ragService.GetDocumentsByKbIdAsync(kb.Id);
+                docCount += docs.Count;
+
+                // Быстрый подсчёт чанков (COUNT в БД работает мгновенно)
+                foreach (var doc in docs)
+                {
+                    chunkCount += await ragService.GetChunkCountAsync(doc.Id);
+                }
+            }
+        }
+
+        var divider = new string('─', 55); // 52 символа тире для идеальной ширины
+
+
+        // Формируем красивую панель с закруглённой рамкой
+        var panel = new Panel(
+            $"[bold cyan]👤 Пользователь:[/] {userInfo} \n" +
+            $"[bold cyan]🤖 Модель:[/] {modelInfo} \n" +
+            $"[dim]{divider}[/]\n" + // <-- ВОТ ЭТА СТРОКА ДЕЛАЕТ МАГИЮ
+            $"[bold yellow]📚 Баз знаний:[/] {kbCount}  |  [bold magenta]📄 Документов:[/] {docCount}  |  [bold blue]🧩 Чанков:[/] {chunkCount}"
+        )
+        {
+            Border = BoxBorder.Rounded,
+            BorderStyle = new Style(foreground: Color.Grey),
+            Padding = new Padding(1, 0, 1, 0)
+        };
+
+        AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
     }
 
@@ -143,7 +183,6 @@ public class MainMenuPage : IComponent
         if (_currentUser != null)
         {
             await userService.SetLastUsernameAsync(_currentUser.Username);
-            // Сбрасываем модель, так как у нового пользователя может быть другая предпочтительная модель
             _selectedModel = await userService.GetLastModelAsync(_currentUser.Id);
         }
     }
@@ -156,7 +195,7 @@ public class MainMenuPage : IComponent
             return;
         }
 
-        var ollamaService = _appContext.GetService<IOllamaService>(); // <-- Используем интерфейс!
+        var ollamaService = _appContext.GetService<IOllamaService>();
         var models = await ollamaService.GetAvailableModelsAsync();
 
         if (models.Count == 0)
