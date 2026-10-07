@@ -6,10 +6,10 @@ using Pgvector.EntityFrameworkCore;
 
 namespace AiHelper.Services;
 
-public class ChatHistoryService(AiHelperDbContext dbContext, IOllamaService ollamaService) : IChatHistoryService
+public class ChatHistoryService(AiHelperDbContext _dbContext, IOllamaService _ollamaService) : IChatHistoryService
 {
-    private readonly AiHelperDbContext _dbContext = dbContext;
-    private readonly IOllamaService _ollamaService = ollamaService;
+    //private readonly AiHelperDbContext _dbContext = dbContext;
+    //private readonly IOllamaService _ollamaService = ollamaService;
     // Создаём новую сессию чата
     public async Task<ChatSession> CreateNewSessionAsync(Guid userId, string modelName)
     {

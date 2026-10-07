@@ -5,19 +5,8 @@ using Spectre.Console;
 
 namespace AiHelper.Components;
 
-public class ChatPage : IComponent
+public class ChatPage(IAppContext _appContext, User _currentUser, string _selectedModel) : IComponent
 {
-    private readonly IAppContext _appContext;
-    private readonly User _currentUser;
-    private readonly string _selectedModel;
-
-    public ChatPage(IAppContext appContext, User currentUser, string selectedModel)
-    {
-        _appContext = appContext;
-        _currentUser = currentUser;
-        _selectedModel = selectedModel;
-    }
-
     public async Task RunAsync()
     {
         var historyService = _appContext.GetService<ChatHistoryService>();

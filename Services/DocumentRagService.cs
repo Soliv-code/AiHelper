@@ -10,10 +10,10 @@ using System.Text;
 
 namespace AiHelper.Services;
 
-public class DocumentRagService(AiHelperDbContext dbContext, IOllamaService ollamaService) : IDocumentRagService
+public class DocumentRagService(AiHelperDbContext _dbContext, IOllamaService _ollamaService) : IDocumentRagService
 {
-    private readonly AiHelperDbContext _dbContext = dbContext;
-    private readonly IOllamaService _ollamaService = ollamaService;
+    //private readonly AiHelperDbContext _dbContext = dbContext;
+    //private readonly IOllamaService _ollamaService = ollamaService;
 
     // ===== Управление базами знаний =====
 

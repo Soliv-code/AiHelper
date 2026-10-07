@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AiHelper.Services;
 
-public class UserService(AiHelperDbContext dbContext) : IUserService
+public class UserService(AiHelperDbContext _dbContext) : IUserService
 {
-    private readonly AiHelperDbContext _dbContext = dbContext;
-    
     public async Task<List<User>> GetAllUsersAsync()
         => await _dbContext.Users.OrderBy(u => u.Username).ToListAsync();
    

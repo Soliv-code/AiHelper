@@ -1,25 +1,15 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AiHelper.Models;
+﻿using AiHelper.Models;
 using AiHelper.Services;
 using AiHelper.UI;
 using Spectre.Console;
 
 namespace AiHelper.Components;
 
-public class MainMenuPage : IComponent
+public class MainMenuPage(IAppContext _appContext) : IComponent
 {
-    private readonly IAppContext _appContext;
-
     // Состояние главного меню
     private User? _currentUser;
     private string? _selectedModel;
-
-    public MainMenuPage(IAppContext appContext)
-    {
-        _appContext = appContext;
-    }
 
     public async Task RunAsync()
     {
